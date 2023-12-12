@@ -1,0 +1,81 @@
+﻿@page "/Database"
+@using WE_Assignment.Models
+@inject WebDbContext DbContext
+
+<h3>Database Information</h3>
+
+@if (classResults != null)
+{
+    <h4>Classes with more than 100 students</h4>
+    <ul>
+        @foreach (var result in classResults)
+        {
+            <li>@($"{result.name}, Room: {result.RoomNumber}")</li>
+        }
+    </ul>
+}
+
+@if (studentResults != null)
+{
+    <h4>Students who take no classes with teachers in department 22</h4>
+    <ul>
+        @foreach (var result in studentResults)
+        {
+            <li>@($"{result.Sid}, {result.Major}")</li>
+        }
+    </ul>
+}
+
+@code {
+    List<Class> classResults;
+    List<Student> studentResults;
+
+    protected override void OnInitialized()
+    {
+        // Task 1a
+        classResults = (from c in DbContext.Classes
+                        where DbContext.Enrollments.Count(e => e.Cid == c.Cid) > 100
+                        select c).ToList();
+
+        // Task 1b
+        studentResults = (from s in DbContext.Students
+                          where !DbContext.Enrollments.Any(e => e.Sid == s.Sid && DbContext.Classes.Any(c => c.Fid == e.Cid && c.Deptid== 22))
+                          select s).ToList();
+   
+
+// Task 2a
+var studentsNoMarks = (from s in DbContext.Students
+                       join e in DbContext.Enrollments on s.Sid equals e.Sid
+                       where !DbContext.Marks.Any(m => m.Sid == s.Sid)
+                       select s).ToList();
+
+// Task 2b
+
+// Task 2c
+var studentsMoreThanTwoClasses = (from s in DbContext.Students
+                                   join e in DbContext.Enrollments on s.Sid equals e.Sid
+                                   group e by s.Sname into g
+                                   where g.Count() > 2
+                                   select new { StudentName = g.Key, NumberOfClasses = g.Count() }).ToList();
+
+// Task 2d
+var facultyTotalClasses = (from f in DbContext.Faculties
+                           join c in DbContext.Classes on f.Fid equals c.Fid
+                           group c by f.Name into g
+                           select new { FacultyName = g.Key, TotalClasses = g.Count() })
+                            .OrderByDescending(x => x.TotalClasses)
+                            .ToList();
+
+// Task 2e
+var studentsComputerScience = (from s in DbContext.Students
+                               join e in DbContext.Enrollments on s.Sid equals e.Sid
+                               join c in DbContext.Classes on e.Cid equals c.Cid
+                               join f in DbContext.Faculties on c.Fid equals f.Fid
+                               where f.Deptid == 22
+                               select s.Sname).ToList();
+
+    }
+  
+
+
+}
